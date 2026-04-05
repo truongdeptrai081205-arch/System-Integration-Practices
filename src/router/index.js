@@ -9,8 +9,22 @@ const routes = [
         },
     },
     {
-        path: "/PersonalList",
+        path: "/benefit-plans",
+        component: () => import("../components/BenefitPlans/index.vue"),
+        meta: {
+            layout: "admin",
+        },
+    },
+    {
+        path: "/personal-list",
         component: () => import("../components/PersonalList/index.vue"),
+        meta: {
+            layout: "admin",
+        },
+    },
+    {
+        path: "/anniversary",
+        component: () => import("../components/Anniversary/index.vue"),
         meta: {
             layout: "admin",
         },
