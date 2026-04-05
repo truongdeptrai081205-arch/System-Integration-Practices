@@ -5,7 +5,7 @@
       <div class="stat-card">
         <div class="icon-wrap"><i class="fa fa-random"></i></div>
         <div class="stat-value">{{ stats.percent }}%</div>
-        <div class="stat-label">PaidToDate - PaidLastYear</div>
+        <div class="stat-label">BENEFIT</div>
       </div>
       <div class="stat-card">
         <div class="icon-wrap"><i class="fa fa-user"></i></div>
@@ -182,12 +182,16 @@ export default {
       currentPage: 1,
       perPage: 10,
       fullData: [],
-      stats: {},
+      stats: {  
+        percent: 0,          // sẽ hiển thị BENEFIT
+        totalEarnings: 0,
+        totalVacation: 0,},
       list: [],
     };
   },
   async mounted() {
     this.fetchData();
+    this.fetchBenefits();
   },
   methods: {
     async fetchData() {
@@ -196,7 +200,8 @@ export default {
           `http://localhost:4000/api/sumdashboard?page=${this.currentPage}&limit=${this.perPage}`
         );
         const data = await res.json();
-         this.stats = data.stats;
+        this.stats.totalEarnings = data.stats.totalEarnings;
+        this.stats.totalVacation = data.stats.totalVacation;
 
         // map đúng dữ liệu API
         this.list = data.data.map((emp) => ({
@@ -209,6 +214,21 @@ export default {
         }));
       } catch (err) {
         console.error(err);
+      }
+    },
+    async fetchBenefits() {
+      try {
+        const res = await fetch(`http://localhost:4000/api/benefits`);
+        const data = await res.json();
+
+        // Tính trung bình của avgBenefit từ tất cả benefitPlanId
+        if (data.length) {
+          const total = data.reduce((sum, item) => sum + item.avgBenefit, 0);
+          const avg = total / data.length;
+          this.stats.percent = avg.toFixed(2); // hiển thị với 2 chữ số thập phân
+        }
+      } catch (err) {
+        console.error("Error fetching benefits:", err);
       }
     },
   },
