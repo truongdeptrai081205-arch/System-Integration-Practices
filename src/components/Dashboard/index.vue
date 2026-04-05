@@ -4,18 +4,18 @@
     <div class="stats-row">
       <div class="stat-card">
         <div class="icon-wrap"><i class="fa fa-random"></i></div>
-        <div class="stat-value">65%</div>
-        <div class="stat-label">Growth</div>
+        <div class="stat-value">{{ stats.percent }}%</div>
+        <div class="stat-label">PaidToDate - PaidLastYear</div>
       </div>
       <div class="stat-card">
         <div class="icon-wrap"><i class="fa fa-user"></i></div>
-        <div class="stat-value">15</div>
-        <div class="stat-label">New Users</div>
+       <div class="stat-value">{{ stats.totalEmployees }}</div>
+        <div class="stat-label">Employees</div>
       </div>
       <div class="stat-card">
         <div class="icon-wrap"><i class="fa fa-money"></i></div>
-        <div class="stat-value">15,152</div>
-        <div class="stat-label">Profit</div>
+       <div class="stat-value">{{ stats.totalPaidToDate }}</div>
+        <div class="stat-label">PaidToDate</div>
       </div>
     </div>
 
@@ -82,20 +82,24 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Rendering engine</th>
-                <th>Browser</th>
-                <th>Platform(s)</th>
-                <th>Engine version</th>
-                <th>CSS grade</th>
+                <th>Employee ID</th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Country</th>
+                <th>Status</th>
+                <th>Hire Date</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(row, i) in paginatedData" :key="i">
-                <td>{{ row.engine }}</td>
-                <td>{{ row.browser }}</td>
-                <td>{{ row.platform }}</td>
-                <td>{{ row.version }}</td>
-                <td>{{ row.grade }}</td>
+              <tr  v-for="emp in paginatedData" :key="emp.id">
+                <td>{{ emp.id }}</td>
+                <td>{{ emp.name }}</td>
+                <td>{{ emp.email }}</td>
+                <td>{{ emp.phone }}</td>
+                <td>{{ emp.country }}</td>
+                <td>{{ emp.status }}</td>
+                <td>{{ emp.hireDate }}</td>
               </tr>
             </tbody>
           </table>
@@ -127,57 +131,75 @@ export default {
       searchQuery: "",
       currentPage: 1,
       perPage: 10, 
-      fullData: [
-        { engine: "Gecko", browser: "Firefox 1.0", platform: "Win 98+ / OSX.2+", version: "1.7", grade: "A" },
-        { engine: "Gecko", browser: "Firefox 1.5", platform: "Win 98+ / OSX.2+", version: "1.8", grade: "A" },
-        { engine: "Gecko", browser: "Firefox 2.0", platform: "Win 98+ / OSX.2+", version: "1.8", grade: "A" },
-        { engine: "Gecko", browser: "Firefox 3.0", platform: "Win 2k+ / OSX.3+", version: "1.9", grade: "A" },
-        { engine: "Gecko", browser: "Camino 1.0", platform: "OSX.2+", version: "1.8", grade: "A" },
-        { engine: "Gecko", browser: "Camino 1.5", platform: "OSX.3+", version: "1.8", grade: "A" },
-        { engine: "Gecko", browser: "Netscape 7.2", platform: "Win 95+ / Mac OS 8.6-9.2", version: "1.7", grade: "A" },
-        { engine: "Gecko", browser: "Netscape Browser 8", platform: "Win 98SE+", version: "1.7", grade: "A" },
-        { engine: "Gecko", browser: "Netscape Navigator 9", platform: "Win 98+ / OSX.2+", version: "1.8", grade: "A" },
-        { engine: "Gecko", browser: "Mozilla 1.0", platform: "Win 95+ / OSX.1+", version: "1", grade: "A" },
-        { engine: "Gecko", browser: "Mozilla 1.1", platform: "Win 95+ / OSX.1+", version: "1.1", grade: "A" },
-        { engine: "Gecko", browser: "Mozilla 1.2", platform: "Win 95+ / OSX.1+", version: "1.2", grade: "A" },
-        { engine: "KHTML", browser: "Konqueror 3.1", platform: "KDE 3.1", version: "3.1", grade: "C" },
-        { engine: "KHTML", browser: "Konqueror 3.3", platform: "KDE 3.3", version: "3.3", grade: "A" },
-        { engine: "KHTML", browser: "Konqueror 3.5", platform: "KDE 3.5", version: "3.5", grade: "A" },
-        { engine: "Trident", browser: "Internet Explorer 4.0", platform: "Win 95+", version: "4", grade: "X" },
-        { engine: "Trident", browser: "Internet Explorer 5.0", platform: "Win 95+", version: "5", grade: "C" },
-        { engine: "Trident", browser: "Internet Explorer 5.5", platform: "Win 95+", version: "5.5", grade: "A" },
-        { engine: "Trident", browser: "Internet Explorer 6", platform: "Win 98+", version: "6", grade: "A" },
-        { engine: "Webkit", browser: "Safari 1.2", platform: "OSX.3", version: "125.5", grade: "A" },
-        { engine: "Webkit", browser: "Safari 1.3", platform: "OSX.3", version: "312.8", grade: "A" },
-        { engine: "Webkit", browser: "Safari 2.0", platform: "OSX.4+", version: "419.3", grade: "A" },
-        { engine: "Misc", browser: "NetFront 3.1", platform: "Embedded devices", version: "-", grade: "C" },
-        { engine: "Misc", browser: "NetFront 3.4", platform: "Embedded devices", version: "-", grade: "A" },
-        { engine: "Misc", browser: "Dillo 0.8", platform: "Embedded devices", version: "-", grade: "X" }
-        //data table
-      ]
+      fullData: [],
+      stats: {},
+      list: [],
     }
   },
-  computed: {
-    filteredData() {
-      if (!this.searchQuery) return this.fullData;
-      const q = this.searchQuery.toLowerCase();
-      return this.fullData.filter(r =>
-        Object.values(r).some(v => String(v).toLowerCase().includes(q))
+  async mounted() {
+  this.fetchData();
+},
+methods: {
+  async fetchData() {
+    try {
+      const res = await fetch(
+        `http://localhost:4000/api/dashboard?limit=${this.perPage}&page=${this.currentPage}`
       );
-    },
-    totalPages() {
-      return Math.ceil(this.filteredData.length / this.perPage);
-    },
-    paginatedData() {
-      const start = (this.currentPage - 1) * this.perPage;
-      return this.filteredData.slice(start, start + this.perPage);
-    },
-    startIdx() { return (this.currentPage - 1) * this.perPage + 1; },
-    endIdx() { 
-      const end = this.currentPage * this.perPage;
-      return end > this.filteredData.length ? this.filteredData.length : end;
+      const data = await res.json();
+
+     
+      this.fullData = data.employees;
+      this.stats = data.stats;
+      this.list = this.fullData.map(emp => ({
+        id: emp.EmployeeId,
+        name: emp.FullName,
+        email: emp.Email,
+        phone: emp.Phone,
+        country: emp.Country,
+        status: emp.EmploymentStatus,
+        hireDate: emp.HireDate ? new Date(emp.HireDate).toLocaleDateString() : "N/A"
+      }));
+
+    } catch (err) {
+      console.error(err);
     }
   }
+},
+watch: {
+  perPage() {
+    this.currentPage = 1;
+    this.fetchData();
+  },
+  currentPage() {
+    this.fetchData();
+  }
+},
+computed: {
+  filteredData() {
+    if (!this.searchQuery) return this.list;
+    return this.list.filter(emp =>
+      emp.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+      emp.email.toLowerCase().includes(this.searchQuery.toLowerCase())
+    );
+  },
+  paginatedData() {
+    const start = (this.currentPage - 1) * this.perPage;
+    return this.filteredData.slice(start, start + this.perPage);
+  },
+
+  totalPages() {
+    return Math.ceil(this.filteredData.length / this.perPage);
+  },
+
+  startIdx() {
+    return this.filteredData.length === 0 ? 0 : (this.currentPage - 1) * this.perPage + 1;
+  },
+
+  endIdx() {
+    return Math.min(this.currentPage * this.perPage, this.filteredData.length);
+  }
+}
+  
 }
 </script>
 
