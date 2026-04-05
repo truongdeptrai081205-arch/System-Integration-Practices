@@ -14,7 +14,8 @@ const routes = [
         meta: {
             layout: "admin",
         },
-    }
+    },
+    
 ];
 
 const router = createRouter({

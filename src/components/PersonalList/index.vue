@@ -71,128 +71,104 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue"
+import { ref, computed, watch, onMounted } from "vue";
+import axios from "axios";
 
-const personals = ref([
-  ...Array.from({ length: 120 }, (_, i) => ({
-    fullName: `User ${i + 1}`,
-    city: ["Hà Nội", "Đà Nẵng", "HCM"][i % 3],
-    email: `user${i + 1}@gmail.com`,
-    phone: `09${10000000 + i}`,
-    gender: i % 2 === 0 ? "Male" : "Female",
-    shareholder: i % 3 === 0 ? "Yes" : "No"
-  }))
-])
-
-const loading = ref(false)
-
+// DATA
+const personals = ref([]);
+const loading = ref(false);
 
 // CONFIG
-const pageSizes = [10, 25, 50, 100]
-const pageSize = ref(10)
-const currentPage = ref(1)
-const searchText = ref("")
+const pageSizes = [10, 25, 50, 100];
+const pageSize = ref(10);
+const currentPage = ref(1);
+const searchText = ref("");
 
-// FILTER
-const filteredData = computed(() => {
-  return personals.value.filter(p =>
+// FETCH DATA
+const fetchPersonals = async () => {
+  try {
+    loading.value = true;
+    const res = await axios.get("http://localhost:4000/api/personal", {
+      params: {
+        limit: pageSize.value,
+        page: currentPage.value,
+      },
+    });
+
+    // API trả về { personal: [...] }
+    personals.value = res.data.personal.map(p => ({
+      fullName: p.FullName,
+      city: p.City,
+      email: p.Email,
+      phone: p.Phone,
+      gender: p.Gender , // nếu API không có
+      shareholder: p.Shareholder_Status ? "Yes" : "No",
+    }));
+  } catch (err) {
+    console.error(err);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// LIFECYCLE
+onMounted(() => {
+  fetchPersonals();
+});
+
+// WATCHERS
+watch([pageSize, currentPage], () => {
+  fetchPersonals();
+});
+
+watch(searchText, () => {
+  currentPage.value = 1;
+});
+
+// COMPUTED
+const filteredData = computed(() =>
+  personals.value.filter(p =>
     Object.values(p).some(val =>
       val.toString().toLowerCase().includes(searchText.value.toLowerCase())
     )
   )
-})
+);
 
-// RESET PAGE
-watch(searchText, () => {
-  currentPage.value = 1
-})
-
-watch(pageSize, () => {
-  currentPage.value = 1
-})
-
-// PAGINATION
 const totalPages = computed(() =>
   Math.ceil(filteredData.value.length / pageSize.value) || 1
-)
+);
 
 const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  return filteredData.value.slice(start, start + pageSize.value)
-})
+  const start = (currentPage.value - 1) * pageSize.value;
+  return filteredData.value.slice(start, start + pageSize.value);
+});
 
 const startIndex = computed(() =>
   filteredData.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1
-)
+);
 
 const endIndex = computed(() =>
   Math.min(currentPage.value * pageSize.value, filteredData.value.length)
-)
+);
 
 // ACTION
 const nextPage = () => {
-  if (currentPage.value < totalPages.value) currentPage.value++
-}
+  if (currentPage.value < totalPages.value) currentPage.value++;
+};
 
 const prevPage = () => {
-  if (currentPage.value > 1) currentPage.value--
-}
-
-
-
+  if (currentPage.value > 1) currentPage.value--;
+};
 </script>
 
 <style scoped>
-.container {
-  padding: 20px;
-}
-
-.top-bar {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th, td {
-  border: 1px solid #ccc;
-  padding: 8px;
-}
-
-
-td[colspan="6"] {
-  text-align: center;
-  padding: 20px;
-  color: #888;
-}
-
-.bottom-bar {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 10px;
-}
-
-.pagination {
-  display: flex;
-  align-items: center;
-}
-
-.pagination button {
-  margin-left: 5px;
-  cursor: pointer;
-}
-
-.pagination button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.link {
-  color: blue;
-  cursor: pointer;
-}
+.container { padding: 20px; }
+.top-bar { display: flex; justify-content: space-between; margin-bottom: 10px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border: 1px solid #ccc; padding: 8px; }
+td[colspan="6"] { text-align: center; padding: 20px; color: #888; }
+.bottom-bar { display: flex; justify-content: space-between; margin-top: 10px; }
+.pagination button { margin-left: 5px; cursor: pointer; }
+.pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+.link { color: blue; cursor: pointer; }
 </style>
