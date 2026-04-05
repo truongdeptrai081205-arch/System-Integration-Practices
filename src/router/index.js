@@ -14,6 +14,27 @@ const routes = [
         meta: {
             layout: "admin",
         },
+    },
+    {
+        path: "/presonal",
+        component: () => import("../components/PresonalList/index.vue"),
+        meta: {
+            layout: "admin",
+        },
+    },
+    {
+        path: "/vadationlist",
+        component: () => import("../components/Vadation/index.vue"),
+        meta: {
+            layout: "admin",
+        },
+    },
+    {
+        path: "/JobHistory-list",
+        component: () => import("../components/JobHistory/index.vue"),
+        meta: {
+            layout: "admin",
+        },
     }
 ];
 
