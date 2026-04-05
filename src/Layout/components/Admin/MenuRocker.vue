@@ -26,8 +26,15 @@
           </li>
 
           <li class="nav-item">
-            <router-link to="/anniversary" class="nav-link">
+            <router-link to="/birthday" class="nav-link">
               <i class="fas fa-birthday-cake"></i>
+              <span>Birthday</span>
+            </router-link>
+          </li>
+
+          <li class="nav-item">
+            <router-link to="/anniversary" class="nav-link">
+              <i class="fas fa-gift"></i>
               <span>Anniversary</span>
             </router-link>
           </li>

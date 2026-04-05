@@ -29,6 +29,13 @@ const routes = [
             layout: "admin",
         },
     },
+    {
+        path: "/birthday",
+        component: () => import("../components/Birthday/index.vue"),
+        meta: {
+            layout: "admin",
+        },
+    },
     
 ];
 
