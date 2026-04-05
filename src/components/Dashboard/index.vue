@@ -1,10 +1,4 @@
-<<<<<<< HEAD
-<template >
-    <div>
-        hello dashboard
-    </div>
-</template>
-=======
+
 <template>
   <div class="admin-wrapper">
 
