@@ -7,7 +7,16 @@ const routes = [
         meta: {
             layout: "admin",
         },
+    },
+    {
+        path: "/PersonalList",
+        component: () => import("../components/PersonalList/index.vue"),
+        meta: {
+            layout: "admin",
+        },
     }
+
+    
 ];
 
 const router = createRouter({
