@@ -7,6 +7,13 @@ const routes = [
         meta: {
             layout: "admin",
         },
+    },
+    {
+        path: "/benefit-plans",
+        component: () => import("../components/BenefitPlans/index.vue"),
+        meta: {
+            layout: "admin",
+        },
     }
 ];
 
