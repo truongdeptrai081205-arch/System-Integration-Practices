@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <h3>Personals - <span class="link">Create New</span></h3>
+    <span class="link" @click="openCreateModal">Create New</span>
 
     <div class="top-bar">
       <div>
@@ -29,18 +29,19 @@
           <th>Phone</th>
           <th>Gender</th>
           <th>Shareholder</th>
+          <th>Actions</th> 
         </tr>
       </thead>
 
       <tbody>
         <!-- Loading -->
         <tr v-if="loading">
-          <td colspan="6">Loading...</td>
+          <td colspan="7" class="text-center">Loading...</td>
         </tr>
 
         <!-- No data -->
         <tr v-else-if="paginatedData.length === 0">
-          <td colspan="6">No data available in table</td>
+          <td colspan="7">No data available in table</td>
         </tr>
 
         <!-- Data -->
@@ -51,6 +52,12 @@
           <td>{{ p.phone }}</td>
           <td>{{ p.gender }}</td>
           <td>{{ p.shareholder }}</td>
+          <td>
+              <div class="action-buttons">
+                <button class="btn-edit" @click="openEditModal(p)">Edit</button>
+                <button class="btn-delete" @click="deletePersonal(p.id)">Delete</button>
+              </div>
+            </td>
         </tr>
       </tbody>
     </table>
@@ -67,6 +74,59 @@
         <button @click="nextPage" :disabled="currentPage === totalPages">❯</button>
       </div>
     </div>
+    <div v-if="isModalOpen" class="modal-overlay" @click.self="closeModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>{{ isEditing ? 'Edit Personal' : 'Create Personal' }}</h3>
+          <span class="close-btn" @click="closeModal">&times;</span>
+        </div>
+        
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>First Name</label>
+              <input type="text" v-model="formData.firstName" />
+            </div>
+            <div class="form-group">
+              <label>Last Name</label>
+              <input type="text" v-model="formData.lastName" />
+            </div>
+            <div class="form-group">
+              <label>City</label>
+              <input type="text" v-model="formData.city" />
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="text" v-model="formData.email" />
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="text" v-model="formData.phone" />
+            </div>
+            <div class="form-group">
+              <label>Gender</label>
+              <select v-model="formData.gender">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Shareholder</label>
+              <div class="checkbox-wrapper">
+                <input type="checkbox" v-model="formData.shareholder" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-back" @click="closeModal">Cancel</button>
+          <button class="btn-create-submit" @click="savePersonal">
+            {{ isEditing ? 'Update' : 'Create Now' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -77,6 +137,100 @@ import axios from "axios";
 // DATA
 const personals = ref([]);
 const loading = ref(false);
+
+const isModalOpen = ref(false);
+const isEditing = ref(false);
+
+const formData = ref({
+  id: null,
+  firstName: "",
+  lastName: "",
+  city: "",
+  email: "",
+  phone: "",
+  gender: "Male",
+  shareholder: false,
+});
+
+const openCreateModal = () => {
+  isModalOpen.value = true;
+  isEditing.value = false;
+
+  formData.value = {
+    id: null,
+    firstName: "",
+    lastName: "",
+    city: "",
+    email: "",
+    phone: "",
+    gender: "Male",
+    shareholder: false,
+  };
+};
+const openEditModal = (p) => {
+  isModalOpen.value = true;
+  isEditing.value = true;
+
+  const name = p.fullName.split(" ");
+
+  formData.value = {
+    id: p.id,
+    firstName: name[0],
+    lastName: name.slice(1).join(" "),
+    city: p.city,
+    email: p.email,
+    phone: p.phone,
+    gender: p.gender,
+    shareholder: p.shareholder === "Yes",
+  };
+};
+const closeModal = () => {
+  isModalOpen.value = false;
+};
+
+const savePersonal = async () => {
+  try {
+    const payload = {
+      First_Name: formData.value.firstName,
+      Last_Name: formData.value.lastName,
+      Email: formData.value.email,
+      Phone_Number: formData.value.phone,
+      City: formData.value.city,
+      State: "VN",
+      Shareholder_Status: formData.value.shareholder ? 1 : 0,
+      Gender: formData.value.gender,
+    };
+
+    if (isEditing.value) {
+      await axios.put(
+        `http://localhost:4000/api/editPersonalList/update/${formData.value.id}`,
+        payload
+      );
+    } else {
+      await axios.post(
+        "http://localhost:4000/api/appPersonalList",
+        payload
+      );
+    }
+
+    closeModal();
+    fetchPersonals();
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+// DELETE
+const deletePersonal = async (id) => {
+  try {
+    await axios.delete(
+      `http://localhost:4000/api/deletePersonal/delete/${id}`
+    );
+    fetchPersonals();
+  } catch (err) {
+    console.error(err);
+  }
+};
 
 // CONFIG
 const pageSizes = [10, 25, 50, 100];
@@ -97,6 +251,7 @@ const fetchPersonals = async () => {
 
     // API trả về { personal: [...] }
     personals.value = res.data.personal.map(p => ({
+      id: p.Employee_ID,
       fullName: p.FullName,
       city: p.City,
       email: p.Email,
@@ -171,4 +326,24 @@ td[colspan="6"] { text-align: center; padding: 20px; color: #888; }
 .pagination button { margin-left: 5px; cursor: pointer; }
 .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
 .link { color: blue; cursor: pointer; }
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  width: 500px;
+  border-radius: 8px;
+}
 </style>

@@ -242,6 +242,8 @@ export default {
     },
   },
   computed: {
+
+    
     filteredData() {
       if (!this.searchQuery) return this.list;
       return this.list.filter(
