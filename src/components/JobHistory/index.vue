@@ -1,163 +1,120 @@
 <template>
   <div class="container">
-    <div v-if="!isCreating" class="card table-card">
-      <div class="card-header">
-        Index - <a href="#" class="create-link" @click.prevent="isCreating = true">Create New</a>
+    <div class="list-section">
+      <h3>
+        Index - 
+        <span class="link" @click="openAddModal">Create New</span>
+      </h3>
+
+      <div class="top-bar">
+        <div>
+          Show
+          <select v-model="perPage">
+            <option :value="10">10</option>
+            <option :value="25">25</option>
+            <option :value="50">50</option>
+          </select>
+          entries
+        </div>
+        <div>
+          Search:
+          <input type="text" v-model="searchQuery" placeholder="Tìm kiếm ngay..." />
+        </div>
       </div>
-      
-      <div class="card-body">
-        <div class="table-controls-wrapper">
-          <div class="show-entries">
-            Show 
-            <select v-model="perPage">
-              <option :value="10">10</option>
-              <option :value="25">25</option>
-              <option :value="50">50</option>
-            </select>
-            entries
-          </div>
 
-          <div class="search-box">
-            Search: <input type="text" v-model="searchQuery" placeholder="Tìm kiếm ngay..." />
-          </div>
-        </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Full Name</th>
+            <th>Department</th>
+            <th>Division</th>
+            <th>Start_Date</th>
+            <th>End_Date</th>
+            <th>Job_Category</th>
+            <th>Location</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
 
-        <div class="table-responsive">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Full Name</th>
-                <th>Department</th>
-                <th>Division</th>
-                <th>Start_Date</th>
-                <th>End_Date</th>
-                <th>Job_Category</th>
-                <th>Location</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(row, i) in paginatedData" :key="i">
-                <td>{{ row.fullName }}</td>
-                <td>{{ row.department }}</td>
-                <td>{{ row.division }}</td>
-                <td>{{ row.startDate }}</td>
-                <td>{{ row.endDate }}</td>
-                <td>{{ row.jobCategory }}</td>
-                <td>{{ row.location }}</td>
-              </tr>
-              <tr v-if="filteredData.length === 0">
-                <td colspan="7" class="no-data">No data available in table</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <tbody>
+          <tr v-if="filteredData.length === 0"><td colspan="8" class="text-center">No data available</td></tr>
+          
+          <tr v-else v-for="(row, index) in paginatedData" :key="row.id">
+            <td>{{ row.fullName }}</td>
+            <td>{{ row.department }}</td>
+            <td>{{ row.division }}</td>
+            <td>{{ row.startDate }}</td>
+            <td>{{ row.endDate }}</td>
+            <td>{{ row.jobCategory }}</td>
+            <td>{{ row.location }}</td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-edit" @click="openEditModal(row)">Edit</button>
+                <button class="btn-delete" @click="deleteRow(row.id)">Delete</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-        <div class="table-footer-wrapper">
-          <div class="info-text">
-            Showing {{ startIdx }} to {{ endIdx }} of {{ filteredData.length }} entries
-          </div>
-          <div class="pagination-container">
-            <button class="nav-btn" @click="currentPage--" :disabled="currentPage === 1">‹</button>
-            <div class="page-numbers">
-              <button v-for="p in totalPages" :key="p" @click="currentPage = p" :class="['page-num-btn', { active: currentPage === p }]">
-                {{ p }}
-              </button>
-            </div>
-            <button class="nav-btn" @click="currentPage++" :disabled="currentPage >= totalPages">›</button>
-          </div>
+      <div class="bottom-bar">
+        <div>Showing {{ startIdx }} to {{ endIdx }} of {{ filteredData.length }} entries</div>
+        <div class="pagination">
+          <button @click="prevPage" :disabled="currentPage === 1">❮</button>
+          <span> Page {{ currentPage }} / {{ totalPages }} </span>
+          <button @click="nextPage" :disabled="currentPage === totalPages">❯</button>
         </div>
       </div>
     </div>
 
-    <div v-else class="card form-card">
-      <div class="form-header">
-        <h1>Create</h1>
-        <p class="subtitle">Job_History</p>
-      </div>
-
-      <div class="form-body">
-        <div class="form-group-row">
-          <label>Employee_ID</label>
-          <select v-model="form.employeeId">
-            <option value=""></option>
-            <option v-for="n in 5" :key="n" :value="n">{{ n }}</option>
-          </select>
+    <div v-if="showUserModal" class="modal-overlay" @click.self="showUserModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>{{ modalMode === 'add' ? 'Thêm Người Dùng' : 'Thông Tin Người Dùng' }}</h3>
+          <span class="close-btn" @click="showUserModal = false">&times;</span>
         </div>
-
-        <div class="form-group-row">
-          <label>Department</label>
-          <input type="text" v-model="form.department" />
-        </div>
-
-        <div class="form-group-row">
-          <label>Division</label>
-          <input type="text" v-model="form.division" />
-        </div>
-
-        <div class="form-group-row">
-          <label>Start_Date</label>
-          <input type="date" v-model="form.startDate" class="datepicker-input" />
-        </div>
-
-        <div class="form-group-row">
-          <label>End_Date</label>
-          <input type="date" v-model="form.endDate" class="datepicker-input" />
-        </div>
-
-        <div class="form-group-row">
-          <label>Job_Title</label>
-          <input type="text" v-model="form.jobTitle" />
-        </div>
-
-        <div class="form-group-row">
-          <label>Supervisor</label>
-          <input type="text" v-model="form.supervisor" />
-        </div>
-
-        <div class="form-group-row">
-          <label>Job_Category</label>
-          <input type="text" v-model="form.jobCategory" />
-        </div>
-
-        <div class="form-group-row">
-          <label>Location</label>
-          <input type="text" v-model="form.location" />
-        </div>
-
-        <div class="form-group-row">
-          <label>Departmen_Code</label>
-          <input type="text" v-model="form.deptCode" />
-        </div>
-
-        <div class="form-group-row">
-          <label>Salary_Type</label>
-          <input type="text" v-model="form.salaryType" />
-        </div>
-
-        <div class="form-group-row">
-          <label>Pay_Period</label>
-          <input type="text" v-model="form.payPeriod" />
-        </div>
-
-        <div class="form-group-row">
-          <label>Hours_per_Week</label>
-          <input type="text" v-model="form.hours" />
-        </div>
-
-        <div class="form-group-row">
-          <label>Hazardous_Training</label>
-          <select v-model="form.hazardous">
-            <option value="Not Set">Not Set</option>
-            <option value="True">True</option>
-            <option value="False">False</option>
-          </select>
-        </div>
-
-        <div class="form-actions">
-          <button class="btn-submit" @click="saveData">Create</button>
-          <div class="back-link-wrapper">
-            <a href="#" class="back-link" @click.prevent="isCreating = false">Back to List</a>
+        
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" v-model="userModalForm.fullName" />
+            </div>
+            <div class="form-group">
+              <label>Department</label>
+              <input type="text" v-model="userModalForm.department" />
+            </div>
+            <div class="form-group">
+              <label>Division</label>
+              <input type="text" v-model="userModalForm.division" />
+            </div>
+            <div class="form-group">
+              <label>Start Date</label>
+              <input type="date" v-model="userModalForm.startDate" />
+            </div>
+            <div class="form-group">
+              <label>End Date</label>
+              <input type="date" v-model="userModalForm.endDate" />
+            </div>
+            <div class="form-group">
+              <label>Job Category</label>
+              <select v-model="userModalForm.jobCategory">
+                <option value="Full-time">Full-time</option>
+                <option value="Part-time">Part-time</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Location</label>
+              <input type="text" v-model="userModalForm.location" />
+            </div>
           </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-back" @click="showUserModal = false">Cancel</button>
+          <button class="btn-create-submit" @click="saveUser">
+            {{ modalMode === 'add' ? 'Create Now' : 'Update' }}
+          </button>
         </div>
       </div>
     </div>
@@ -167,12 +124,26 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 
-const isCreating = ref(false);
 const perPage = ref(10);
 const currentPage = ref(1);
 const searchQuery = ref('');
 
+const showUserModal = ref(false);
+const modalMode = ref('add');
+
+const userModalForm = ref({
+  id: null,
+  fullName: '',
+  department: '',
+  division: '',
+  startDate: '',
+  endDate: '',
+  jobCategory: 'Full-time',
+  location: ''
+});
+
 const jobHistoryList = ref(Array.from({ length: 20 }, (_, i) => ({
+  id: i + 1,
   fullName: `Employee ${i + 1}`,
   department: i % 2 === 0 ? "IT" : "HR",
   division: "General",
@@ -182,24 +153,6 @@ const jobHistoryList = ref(Array.from({ length: 20 }, (_, i) => ({
   location: "Vietnam"
 })));
 
-const form = ref({
-  employeeId: '',
-  department: '',
-  division: '',
-  startDate: '', 
-  endDate: '',
-  jobTitle: '',
-  supervisor: '',
-  jobCategory: '',
-  location: '',
-  deptCode: '',
-  salaryType: '',
-  payPeriod: '',
-  hours: '',
-  hazardous: 'Not Set'
-});
-
-// Real-time filtering logic
 const filteredData = computed(() => {
   const query = searchQuery.value.toLowerCase().trim();
   if (!query) return jobHistoryList.value;
@@ -219,57 +172,84 @@ const paginatedData = computed(() => {
 const startIdx = computed(() => filteredData.value.length === 0 ? 0 : (currentPage.value - 1) * perPage.value + 1);
 const endIdx = computed(() => Math.min(currentPage.value * perPage.value, filteredData.value.length));
 
-watch(searchQuery, () => {
+watch([searchQuery, perPage], () => {
   currentPage.value = 1;
 });
 
-const saveData = () => {
-  jobHistoryList.value.unshift({
-    fullName: "User Input",
-    department: form.value.department,
-    division: form.value.division,
-    startDate: form.value.startDate,
-    endDate: form.value.endDate,
-    jobCategory: form.value.jobCategory,
-    location: form.value.location
-  });
-  isCreating.value = false;
-  form.value = { hazardous: 'Not Set' };
+const prevPage = () => { if (currentPage.value > 1) currentPage.value--; };
+const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++; };
+
+const openAddModal = () => {
+  modalMode.value = 'add';
+  userModalForm.value = { 
+    id: Date.now(), 
+    fullName: '', 
+    department: '', 
+    division: '', 
+    startDate: '', 
+    endDate: '', 
+    jobCategory: 'Full-time', 
+    location: '' 
+  };
+  showUserModal.value = true;
+};
+
+const openEditModal = (row) => {
+  modalMode.value = 'edit';
+  userModalForm.value = { ...row };
+  showUserModal.value = true;
+};
+
+const deleteRow = (id) => {
+  if (confirm("Are you sure you want to delete this record?")) {
+    jobHistoryList.value = jobHistoryList.value.filter(item => item.id !== id);
+  }
+};
+
+const saveUser = () => {
+  if (modalMode.value === 'add') {
+    jobHistoryList.value.unshift({ ...userModalForm.value });
+  } else {
+    const idx = jobHistoryList.value.findIndex(item => item.id === userModalForm.value.id);
+    if (idx !== -1) {
+      jobHistoryList.value[idx] = { ...userModalForm.value };
+    }
+  }
+  showUserModal.value = false;
 };
 </script>
 
 <style scoped>
-.container { padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fdfdfd; min-height: 100vh; color: #333; }
-.card { background: #fff; border-radius: 4px; }
+.container { padding: 20px; font-family: sans-serif; color: #333; }
+h3 { background-color: #fcfcfc; padding: 15px; margin: 0; border: 1px solid #e0e0e0; }
+.link { color: #007bff; cursor: pointer; text-decoration: underline; margin-left: 10px; font-size: 0.8em; }
 
-.card-header { font-size: 20px; margin-bottom: 20px; color: #333; }
-.create-link { color: #00afea; text-decoration: none; font-size: 14px; }
-.table-controls-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; }
-.search-box input { border: 1px solid #ccc; padding: 4px 8px; border-radius: 3px; outline: none; }
+.top-bar, .bottom-bar { display: flex; justify-content: space-between; padding: 15px; border: 1px solid #e0e0e0; background: #fff; }
+table { width: 100%; border-collapse: collapse; border: 1px solid #e0e0e0; }
+th, td { border: 1px solid #e0e0e0; padding: 10px; text-align: left; }
+th { background: #f8f9fa; }
+.text-center { text-align: center; }
 
-.data-table { width: 100%; border-collapse: collapse; }
-.data-table th { text-align: left; padding: 12px; border: 1px solid #dee2e6; background: #fff; font-weight: 600; }
-.data-table td { padding: 12px; border: 1px solid #dee2e6; color: #444; }
+.action-buttons { display: flex; gap: 5px; }
+.btn-edit { background: #ffc107; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; color: #000; }
+.btn-delete { background: #dc3545; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; color: #fff; }
+.btn-edit:hover { background: #e0a800; }
+.btn-delete:hover { background: #c82333; }
 
-.table-footer-wrapper { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; font-size: 14px; }
-.pagination-container { display: flex; border: 1px solid #dee2e6; }
-.nav-btn, .page-num-btn { background: #fff; border: none; border-left: 1px solid #dee2e6; padding: 5px 12px; cursor: pointer; color: #007bff; }
-.nav-btn:first-child { border-left: none; }
-.page-num-btn.active { background: #007bff; color: #fff; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal-content { background: #fff; width: 500px; border-radius: 8px; display: flex; flex-direction: column; max-height: 90vh; }
+.modal-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+.modal-header h3 { border: none; padding: 0; background: none; }
+.close-btn { cursor: pointer; font-size: 20px; }
+.modal-body { padding: 20px; overflow-y: auto; }
+.form-grid { display: grid; gap: 15px; }
+.form-group { display: flex; flex-direction: column; }
+.form-group label { font-weight: bold; margin-bottom: 5px; font-size: 13px; }
+.form-group input, .form-group select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+.modal-footer { padding: 15px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; }
+.btn-back { background: #6c757d; color: #fff; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+.btn-back:hover { background: #5a6268; }
+.btn-create-submit { background: #28a745; color: #fff; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
 
-.form-header h1 { font-size: 36px; font-weight: 400; margin-bottom: 0; }
-.subtitle { font-size: 20px; font-weight: 600; margin-top: 5px; margin-bottom: 40px; color: #333; }
-
-.form-body { display: flex; flex-direction: column; gap: 4px; }
-.form-group-row { display: flex; align-items: center; }
-.form-group-row label { width: 160px; text-align: right; margin-right: 15px; font-size: 14px; color: #555; }
-.form-group-row input, .form-group-row select { width: 400px; padding: 5px; border: 1px solid #aaa; border-radius: 2px; height: 30px; box-sizing: border-box; }
-
-.datepicker-input { font-family: inherit; }
-
-.form-actions { margin-left: 175px; margin-top: 20px; }
-.btn-submit { background-color: #f4f4f4; border: 1px solid #ccc; padding: 5px 15px; font-size: 14px; border-radius: 3px; cursor: pointer; color: #333; }
-.btn-submit:hover { background-color: #e8e8e8; }
-.back-link-wrapper { margin-top: 10px; }
-.back-link { color: #00afea; text-decoration: none; font-size: 14px; }
-</style>```
+.pagination button { margin: 0 5px; cursor: pointer; }
+</style>

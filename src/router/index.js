@@ -35,6 +35,13 @@ const routes = [
         meta: {
             layout: "admin",
         },
+    },
+    {
+        path: "/Brithday-list",
+        component: () => import("../components/Birthday/index.vue"),
+        meta: {
+            layout: "admin",
+        },
     }
 ];
 
