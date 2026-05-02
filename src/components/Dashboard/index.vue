@@ -1,12 +1,12 @@
 <template>
-  <div class="p-8">
+  <div class="p-8 mt-[-32px]">
     <div class="max-w-[1600px] mx-auto">
       <div class="filter-header">
         <i class="fas fa-filter mr-2"></i>
-        BỘ LỌC DỮ LIỆU NÂNG CAO
+        BỘ LỌC
       </div>
       <div class="filter-body shadow-lg">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 items-end">
           <div>
             <label class="filter-label">Dân tộc</label>
             <select id="filterEthnicity" class="filter-select">
@@ -40,6 +40,14 @@
             </select>
           </div>
           <div>
+            <label class="filter-label">Phòng ban</label>
+            <select id="filterDepartment" class="filter-select">
+              <option value="">[Tất cả phòng ban]</option>
+              <option>IT</option>
+              <option>HR</option>
+            </select>
+          </div>
+          <div>
             <button @click="applyFilter" class="apply-btn uppercase">
               <i class="fas fa-sync-alt mr-2"></i> Apply Filter
             </button>
@@ -47,14 +55,37 @@
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="card p-6 mb-8 mt-[-16px] bg-slate-50 border border-slate-200">
+        <h3 class="text-sm font-bold text-slate-800 uppercase mb-4 border-b pb-2">Thông tin & Cảnh báo</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-700 leading-relaxed">
+          <div>
+            <h4 class="font-bold text-slate-800 mb-2">Thông tin chung:</h4>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>Tổng thu nhập theo cổ đông, giới tính, dân tộc, nhân viên bán thời gian và toàn thời gian.</li>
+              <li>Tổng số ngày nghỉ phép của cổ đông, theo giới tính, dân tộc, hình thức làm việc và thời gian làm việc.</li>
+              <li>Mức phúc lợi trung bình đã chi trả cho cổ đông và người không phải cổ đông tính đến nay theo từng kế hoạch phúc lợi.</li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-bold text-slate-800 mb-2">Cảnh báo theo điều kiện:</h4>
+            <ul id="alertList" class="space-y-2 text-emerald-600 font-medium">
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
         <div class="card p-6 border-l-4 border-blue-500">
           <p class="text-[11px] text-gray-400 font-bold uppercase mb-1">Số lượng nhân sự</p>
           <h2 id="kpiTotalEmployees" class="text-2xl font-bold text-slate-700">0</h2>
         </div>
         <div class="card p-6 border-l-4 border-emerald-500">
-          <p class="text-[11px] text-gray-400 font-bold uppercase mb-1">Tổng thu nhập năm</p>
+          <p class="text-[11px] text-gray-400 font-bold uppercase mb-1">Tổng thu nhập năm nay</p>
           <h2 id="kpiAnnualRevenue" class="text-2xl font-bold text-slate-700">$0</h2>
+        </div>
+        <div class="card p-6 border-l-4 border-teal-500">
+          <p class="text-[11px] text-gray-400 font-bold uppercase mb-1">Tổng thu nhập năm trước</p>
+          <h2 id="kpiPrevAnnualRevenue" class="text-2xl font-bold text-slate-700">$0</h2>
         </div>
         <div class="card p-6 border-l-4 border-amber-500">
           <p class="text-[11px] text-gray-400 font-bold uppercase mb-1">Số ngày nghỉ phép</p>
@@ -92,7 +123,16 @@
         </div>
       </div>
 
-      <div class="card overflow-hidden">
+      <div class="grid grid-cols-1 gap-6 mb-8">
+        <div class="card p-6">
+          <h3 class="text-xs font-bold text-gray-500 uppercase mb-6 border-b pb-4">Tổng Lương (Năm trước và Năm nay)</h3>
+          <div class="h-[350px]">
+            <canvas id="salaryComparisonChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card overflow-hidden mb-8">
         <div class="p-5 border-b flex justify-between items-center bg-white">
           <h3 class="text-sm font-bold text-slate-700 uppercase">Bảng chi tiết nhân viên</h3>
           <div class="relative">
@@ -115,6 +155,7 @@
                 <th>Gender</th>
                 <th>Shareholder</th>
                 <th>Job Type</th>
+                <th>Department</th>
                 <th>Salary (YTD)</th>
                 <th>Status</th>
               </tr>
@@ -129,47 +170,24 @@
 
 <script setup>
 import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import Chart from 'chart.js/auto'
+
+const router = useRouter()
 
 let incomeChartInstance = null
 let vacationChartInstance = null
+let salaryComparisonChartInstance = null
 
 const masterData = [
-  { name: 'Nguyen Van A', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 62000, status: 'Active', daysTaken: 12 },
-  { name: 'Nguyen Thi B', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Part-time', salary: 40000, status: 'Active', daysTaken: 6 },
-  { name: 'Tran Van C', ethnicity: 'Khác', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 68000, status: 'Inactive', daysTaken: 18 },
-  { name: 'Le Thi D', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 55000, status: 'Active', daysTaken: 10 },
-  { name: 'Pham Van E', ethnicity: 'Kinh', gender: 'Male', shareholder: 'No', jobType: 'Full-time', salary: 48000, status: 'Active', daysTaken: 8 },
-  { name: 'Hoang Thi F', ethnicity: 'Khác', gender: 'Female', shareholder: 'Yes', jobType: 'Part-time', salary: 35000, status: 'Active', daysTaken: 4 },
-  { name: 'Vo Van G', ethnicity: 'Kinh', gender: 'Male', shareholder: 'No', jobType: 'Part-time', salary: 28000, status: 'Active', daysTaken: 3 },
-  { name: 'Dang Thi H', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 51000, status: 'Inactive', daysTaken: 14 },
-  { name: 'Bui Van I', ethnicity: 'Khác', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 72000, status: 'Active', daysTaken: 11 },
-  { name: 'Vu Thi K', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 53000, status: 'Active', daysTaken: 9 },
-  { name: 'Ngo Van L', ethnicity: 'Kinh', gender: 'Male', shareholder: 'No', jobType: 'Full-time', salary: 49000, status: 'Active', daysTaken: 7 },
-  { name: 'Do Thi M', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Part-time', salary: 32000, status: 'Inactive', daysTaken: 2 },
-  { name: 'Ly Van N', ethnicity: 'Khác', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 66000, status: 'Active', daysTaken: 15 },
-  { name: 'Phan Thi O', ethnicity: 'Kinh', gender: 'Female', shareholder: 'Yes', jobType: 'Full-time', salary: 75000, status: 'Active', daysTaken: 12 },
-  { name: 'Duong Van P', ethnicity: 'Kinh', gender: 'Male', shareholder: 'No', jobType: 'Part-time', salary: 41000, status: 'Active', daysTaken: 5 },
-  { name: 'Truong Thi Q', ethnicity: 'Khác', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 46000, status: 'Active', daysTaken: 8 },
-  { name: 'Mac Van R', ethnicity: 'Kinh', gender: 'Male', shareholder: 'No', jobType: 'Full-time', salary: 52000, status: 'Active', daysTaken: 10 },
-  { name: 'Ho Thi S', ethnicity: 'Kinh', gender: 'Female', shareholder: 'Yes', jobType: 'Full-time', salary: 80000, status: 'Active', daysTaken: 20 },
-  { name: 'Dinh Van T', ethnicity: 'Khác', gender: 'Male', shareholder: 'No', jobType: 'Part-time', salary: 38000, status: 'Inactive', daysTaken: 4 },
-  { name: 'Ha Thi U', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 50000, status: 'Active', daysTaken: 7 },
-  { name: 'Ton Van V', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 64000, status: 'Active', daysTaken: 13 },
-  { name: 'Khuc Thi W', ethnicity: 'Khác', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 57000, status: 'Active', daysTaken: 11 },
-  { name: 'Chau Van X', ethnicity: 'Kinh', gender: 'Male', shareholder: 'No', jobType: 'Part-time', salary: 44000, status: 'Active', daysTaken: 6 },
-  { name: 'Kieu Thi Y', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 42000, status: 'Active', daysTaken: 5 },
-  { name: 'Lam Van Z', ethnicity: 'Khác', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 69000, status: 'Active', daysTaken: 16 },
-  { name: 'Luu Thi AA', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 58000, status: 'Active', daysTaken: 9 },
-  { name: 'Quach Van BB', ethnicity: 'Kinh', gender: 'Male', shareholder: 'No', jobType: 'Full-time', salary: 45000, status: 'Inactive', daysTaken: 4 },
-  { name: 'Ung Thi CC', ethnicity: 'Khác', gender: 'Female', shareholder: 'No', jobType: 'Part-time', salary: 31000, status: 'Active', daysTaken: 3 },
-  { name: 'Tieu Van DD', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 71000, status: 'Active', daysTaken: 12 },
-  { name: 'Nghiem Thi EE', ethnicity: 'Kinh', gender: 'Female', shareholder: 'Yes', jobType: 'Full-time', salary: 78000, status: 'Active', daysTaken: 18 },
-  { name: 'Ta Van FF', ethnicity: 'Khác', gender: 'Male', shareholder: 'No', jobType: 'Part-time', salary: 39000, status: 'Active', daysTaken: 5 },
-  { name: 'Nham Thi GG', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 47000, status: 'Active', daysTaken: 8 },
-  { name: 'Phung Van HH', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 63000, status: 'Active', daysTaken: 10 },
-  { name: 'Thiều Thị II', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 56000, status: 'Active', daysTaken: 9 }
+  { name: 'Nguyen Van A', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 62000, status: 'Active', daysTaken: 12, department: 'IT', hireDate: '2025-05-05', birthMonth: 5 },
+  { name: 'Nguyen Thi B', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Part-time', salary: 40000, status: 'Active', daysTaken: 6, department: 'HR', hireDate: '2024-04-15', birthMonth: 12 },
+  { name: 'Tran Van C', ethnicity: 'Khác', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 68000, status: 'Inactive', daysTaken: 18, department: 'IT', hireDate: '2022-05-02', birthMonth: 9 }
 ]
+
+const getMonthFromDate = (dateString) => {
+  return new Date(dateString).getMonth() + 1
+}
 
 const renderDashboard = (dataToUse) => {
   const totalEmployees = dataToUse.length
@@ -177,10 +195,13 @@ const renderDashboard = (dataToUse) => {
   const avgIncome = totalEmployees > 0 ? totalSalary / totalEmployees : 0
   const totalVacation = dataToUse.reduce((sum, item) => sum + item.daysTaken, 0)
 
-  document.getElementById('kpiTotalEmployees').innerText = totalEmployees
+  const totalPrevSalary = Math.round(totalSalary * 0.8)
+
+  document.getElementById('kpiTotalEmployees').innerText = totalEmployees.toLocaleString()
   document.getElementById('kpiAnnualRevenue').innerText = '$' + totalSalary.toLocaleString()
+  document.getElementById('kpiPrevAnnualRevenue').innerText = '$' + totalPrevSalary.toLocaleString()
   document.getElementById('kpiAvgIncome').innerText = '$' + Math.round(avgIncome).toLocaleString()
-  document.getElementById('kpiTotalVacation').innerText = totalVacation + ' ngày'
+  document.getElementById('kpiTotalVacation').innerText = totalVacation.toLocaleString() + ' ngày'
 
   const fullTimeCount = dataToUse.filter(item => item.jobType === 'Full-time').length
   const partTimeCount = dataToUse.filter(item => item.jobType === 'Part-time').length
@@ -201,6 +222,7 @@ const renderDashboard = (dataToUse) => {
 
   if (incomeChartInstance) incomeChartInstance.destroy()
   if (vacationChartInstance) vacationChartInstance.destroy()
+  if (salaryComparisonChartInstance) salaryComparisonChartInstance.destroy()
 
   const ctxIncome = document.getElementById('incomeChart').getContext('2d')
   incomeChartInstance = new Chart(ctxIncome, {
@@ -241,11 +263,96 @@ const renderDashboard = (dataToUse) => {
     }
   })
 
+  const ctxSalaryComparison = document.getElementById('salaryComparisonChart').getContext('2d')
+  salaryComparisonChartInstance = new Chart(ctxSalaryComparison, {
+    type: 'bar',
+    data: {
+      labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+      datasets: [
+        {
+          label: 'Năm trước',
+          data: [totalPrevSalary * 0.25, totalPrevSalary * 0.25, totalPrevSalary * 0.25, totalPrevSalary * 0.25],
+          backgroundColor: '#829cf9',
+          borderRadius: 4
+        },
+        {
+          label: 'Năm nay',
+          data: [totalSalary * 0.25, totalSalary * 0.25, totalSalary * 0.25, totalSalary * 0.25],
+          backgroundColor: '#4ade80',
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true } }
+    }
+  })
+
+  const alertList = document.getElementById('alertList')
+  alertList.innerHTML = ''
+
+  let alerts = []
+  const currentMonth = 5;
+
+  dataToUse.forEach(item => {
+    const hireDateThisYear = new Date(new Date().getFullYear(), new Date(item.hireDate).getMonth(), new Date(item.hireDate).getDate())
+    const diffTime = hireDateThisYear.getTime() - new Date().getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    if (diffDays >= 0 && diffDays <= 7) {
+      alerts.push({
+        type: 'default',
+        text: `Cảnh báo: Nhân viên ${item.name} sắp đến ngày kỷ niệm tuyển dụng (còn ${diffDays} ngày).`
+      });
+    }
+
+    if (item.daysTaken > 10) {
+      alerts.push({
+        type: 'default',
+        text: `Cảnh báo: Nhân viên ${item.name} đã tích lũy ${item.daysTaken} ngày nghỉ phép, vượt quá mức quy định.`
+      });
+    }
+
+    if (item.birthMonth === currentMonth) {
+      alerts.push({
+        type: 'birthday',
+        text: `Cảnh báo: Nhân viên ${item.name} có sinh nhật trong tháng hiện tại.`
+      });
+    }
+  })
+
+  if (alerts.length === 0) {
+    alertList.innerHTML = `<li class="text-gray-400">Không có cảnh báo nào cho điều kiện này.</li>`
+  } else {
+    alerts.forEach(alertObj => {
+      let li = document.createElement('li');
+      li.className = 'flex justify-between items-center bg-emerald-50 px-3 py-2 rounded-md border border-emerald-100';
+
+      let textSpan = document.createElement('span');
+      textSpan.textContent = alertObj.text;
+      li.appendChild(textSpan);
+
+      if (alertObj.type === 'birthday') {
+        let viewBtn = document.createElement('button');
+        viewBtn.textContent = 'Xem';
+        viewBtn.className = 'ml-4 bg-emerald-600 text-white text-[10px] font-bold py-1 px-3 rounded uppercase hover:bg-emerald-700 transition';
+        viewBtn.onclick = (e) => {
+          e.preventDefault();
+          router.push('/Brithday-list');
+        };
+        li.appendChild(viewBtn);
+      }
+
+      alertList.appendChild(li);
+    })
+  }
+
   const tableBody = document.querySelector('#employeeTable tbody')
   tableBody.innerHTML = ''
 
   if (dataToUse.length === 0) {
-    tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">Không có dữ liệu phù hợp.</td></tr>`
+    tableBody.innerHTML = `<tr><td colspan="8" class="text-center p-4">Không có dữ liệu phù hợp.</td></tr>`
     return
   }
 
@@ -259,6 +366,7 @@ const renderDashboard = (dataToUse) => {
         <td>${item.gender}</td>
         <td><span class="${color} font-semibold">${item.shareholder}</span></td>
         <td>${item.jobType}</td>
+        <td>${item.department}</td>
         <td class="font-mono">$${item.salary.toLocaleString()}</td>
         <td><span class="status-pill ${statusColor}">${item.status}</span></td>
       </tr>`
@@ -270,12 +378,14 @@ const applyFilter = () => {
   const gen = document.getElementById('filterGender').value
   const sh = document.getElementById('filterShareholder').value
   const job = document.getElementById('filterJobType').value
+  const dept = document.getElementById('filterDepartment').value
 
   const filteredData = masterData.filter(item => {
     return (!eth || item.ethnicity === eth) &&
            (!gen || item.gender === gen) &&
            (!sh || item.shareholder === sh) &&
-           (!job || item.jobType === job)
+           (!job || item.jobType === job) &&
+           (!dept || item.department === dept)
   })
 
   renderDashboard(filteredData)
@@ -302,7 +412,7 @@ onMounted(() => {
   border: 1px solid #e1e4e8;
 }
 .filter-header {
-  background: #1a3a4a;
+  background: #3f51b5;
   color: white;
   padding: 12px 20px;
   border-radius: 8px 8px 0 0;
@@ -312,7 +422,7 @@ onMounted(() => {
   letter-spacing: 1px;
 }
 .filter-body {
-  background: #244b5e;
+  background: #5c6bc0;
   color: white;
   padding: 20px;
   border-radius: 0 0 8px 8px;
@@ -323,7 +433,7 @@ onMounted(() => {
   font-size: 11px;
   font-weight: 600;
   margin-bottom: 8px;
-  color: #a5b8c4;
+  color: #e8eaf6;
   text-transform: uppercase;
 }
 .filter-select {
@@ -337,7 +447,7 @@ onMounted(() => {
   outline: none;
 }
 .apply-btn {
-  background: #1abc9c;
+  background: #009688;
   color: white;
   font-weight: bold;
   font-size: 13px;
@@ -349,7 +459,7 @@ onMounted(() => {
   width: 100%;
 }
 .apply-btn:hover {
-  background: #16a085;
+  background: #00796b;
 }
 table {
   width: 100%;
