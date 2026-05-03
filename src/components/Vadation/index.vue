@@ -1,93 +1,64 @@
 <template>
-  <div class="card table-card">
-    <div class="card-header">
-      Validation - 
-      <a href="javascript:void(0)" class="create-link" @click="openCreateModal">
-        Add New Record
-      </a>
-    </div>
-    
-    <div class="card-body">
-      <div class="table-controls-wrapper">
-        <div class="show-entries">
-          Show 
-          <select v-model="perPage" @change="currentPage = 1">
-            <option :value="10">10</option>
-            <option :value="20">20</option>
-            <option :value="50">50</option>
+  <div class="container">
+    <div class="list-section">
+      <h3>
+        Vacation List - 
+        <span class="link" @click="openCreateModal">Create New</span>
+      </h3>
+
+      <div class="top-bar">
+        <div>
+          Show
+          <select v-model="pageSize">
+            <option v-for="size in pageSizes" :key="size" :value="size">{{ size }}</option>
           </select>
           entries
         </div>
-
-        <div class="date-filter-box">
-          <div class="filter-item">
-            <label>From:</label>
-            <input type="date" v-model="startDate" @change="currentPage = 1" />
-          </div>
-          <div class="filter-item">
-            <label>To:</label>
-            <input type="date" v-model="endDate" @change="currentPage = 1" />
-          </div>
-          <button class="btn-reset" @click="resetDate">Reset</button>
+        <div>
+          Search:
+          <input type="text" v-model="searchText" placeholder="Tìm tên hoặc mức độ..." />
         </div>
       </div>
 
-      <div class="table-responsive">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Employee Name</th>
-              <th>Work Date</th>
-              <th>Start Time</th>
-              <th>End Time</th>
-              <th>Status</th>
-              <th style="width: 150px;">Actions</th> 
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(row) in paginatedData" :key="row.id">
-              <td class="font-bold">{{ row.empName }}</td>
-              <td>{{ row.date }}</td>
-              <td>{{ row.startTime }}</td>
-              <td>{{ row.endTime }}</td>
-              <td>
-                <span :class="['status-tag', row.status.toLowerCase()]">
-                  {{ row.status }}
-                </span>
-              </td>
-              <td class="actions">
-                <a href="javascript:void(0)" v-if="row.status === 'Pending'" @click="verifyRecord(row.id)">Verify</a>
-                <span v-if="row.status === 'Pending'"> | </span>
-                <a href="javascript:void(0)" @click="openEditModal(row)">Edit</a> | 
-                <a href="javascript:void(0)" @click="deleteRecord(row.id)" class="text-danger">Delete</a>
-              </td>
-            </tr>
-            <tr v-if="paginatedData.length === 0">
-              <td colspan="6" class="no-data">
-                No validation records found for this period.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Full Name</th>
+            <th>Vacation Days</th> 
+            <th>Level</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
 
-      <div class="table-footer-wrapper">
-        <div class="info-text">
-          Showing {{ startIdx }} to {{ endIdx }} of {{ filteredData.length }} entries
-        </div>
-        
-        <div class="pagination-container">
-          <button class="nav-btn" @click="currentPage--" :disabled="currentPage === 1">‹</button>
-          <div class="page-numbers">
-            <button 
-              v-for="p in totalPages" :key="p" 
-              @click="currentPage = p" 
-              :class="['page-num-btn', { active: currentPage === p }]"
-            >
-              {{ p }}
-            </button>
-          </div>
-          <button class="nav-btn" @click="currentPage++" :disabled="currentPage >= totalPages">›</button>
+        <tbody>
+          <tr v-if="loading"><td colspan="4" class="text-center">Loading...</td></tr>
+          <tr v-else-if="paginatedData.length === 0"><td colspan="4" class="text-center">No data available</td></tr>
+          
+          <tr v-else v-for="(p, index) in paginatedData" :key="p.id">
+            <td>{{ p.FullName }}</td>
+            <td>{{ p.Vacation_Days }}</td>
+            <td>
+              <span class="badge" :class="getLevelClass(p.Level)">
+                <span class="dot"></span>
+                <span class="text-label">{{ p.Level }}</span>
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-edit" @click="openEditModal(p)">Edit</button>
+                <button class="btn-delete" @click="deleteRecord(p.id)">Delete</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="bottom-bar">
+        <div>Showing {{ startIndex }} to {{ endIndex }} of {{ filteredData.length }} entries</div>
+        <div class="pagination">
+          <button @click="prevPage" :disabled="currentPage === 1">❮</button>
+          <span> Page {{ currentPage }} / {{ totalPages }} </span>
+          <button @click="nextPage" :disabled="currentPage === totalPages">❯</button>
         </div>
       </div>
     </div>
@@ -95,45 +66,35 @@
     <div v-if="isModalOpen" class="modal-overlay" @click.self="closeModal">
       <div class="modal-content">
         <div class="modal-header">
-          <h3 class="modal-title">{{ isEditing ? 'Edit Validation' : 'Add New Validation' }}</h3>
-          <span class="close-x" @click="closeModal">&times;</span>
+          <h3>{{ isEditing ? 'Edit Entry' : 'Create New Entry' }}</h3>
+          <span class="close-btn" @click="closeModal">&times;</span>
         </div>
-
+        
         <div class="modal-body">
-          <div class="form-container-modal">
-            <div class="form-group-modal">
-              <label>Employee Name</label>
-              <input type="text" v-model="formData.empName" placeholder="Enter full name" />
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" v-model="formData.FullName" placeholder="Last279 First279" />
             </div>
-            <div class="form-group-modal">
-              <label>Work Date</label>
-              <input type="date" v-model="formData.date" />
+            <div class="form-group">
+              <label>Vacation Days</label>
+              <input type="number" v-model.number="formData.Vacation_Days" />
             </div>
-            <div class="form-group-modal-row">
-              <div class="form-group-modal">
-                <label>Start Time</label>
-                <input type="time" v-model="formData.startTime" />
-              </div>
-              <div class="form-group-modal">
-                <label>End Time</label>
-                <input type="time" v-model="formData.endTime" />
-              </div>
-            </div>
-            <div class="form-group-modal">
-              <label>Status</label>
-              <select v-model="formData.status">
-                <option value="Approved">Approved</option>
-                <option value="Pending">Pending</option>
-                <option value="Rejected">Rejected</option>
+            <div class="form-group">
+              <label>Level</label>
+              <select v-model="formData.Level">
+                <option value="CRITICAL">CRITICAL</option>
+                <option value="WARNING">WARNING</option>
+                <option value="NORMAL">NORMAL</option>
               </select>
             </div>
           </div>
         </div>
 
         <div class="modal-footer">
-          <button class="btn-modal-back" @click="closeModal">Cancel</button>
-          <button class="btn-modal-save" @click="saveRecord">
-            {{ isEditing ? 'Update Record' : 'Create Record' }}
+          <button class="btn-back" @click="closeModal">Cancel</button>
+          <button class="btn-create-submit" @click="saveRecord">
+            {{ isEditing ? 'Update' : 'Create Now' }}
           </button>
         </div>
       </div>
@@ -142,149 +103,162 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from "vue"
 
-const isModalOpen = ref(false);
-const isEditing = ref(false);
-const currentEditId = ref(null);
+const isModalOpen = ref(false)
+const isEditing = ref(false)
+const currentEditId = ref(null)
+const loading = ref(false)
 
-const perPage = ref(10);
-const currentPage = ref(1);
-const startDate = ref("");
-const endDate = ref("");
+const records = ref([
+  ...Array.from({ length: 15 }, (_, i) => ({
+    id: Date.now() + i,
+    FullName: `Last${279 + i} First${279 + i}`,
+    Vacation_Days: 19,
+    Level: i % 3 === 0 ? "CRITICAL" : i % 3 === 1 ? "WARNING" : "NORMAL"
+  }))
+])
 
-const rawData = ref([
-  { id: 1, empName: "Nguyen Van A", date: "2026-04-01", startTime: "08:00", endTime: "17:00", status: "Approved" },
-  { id: 2, empName: "Tran Thi B", date: "2026-04-02", startTime: "08:30", endTime: "17:30", status: "Pending" },
-  { id: 3, empName: "Le Van C", date: "2026-04-03", startTime: "09:00", endTime: "18:00", status: "Approved" },
-  { id: 4, empName: "Pham Minh D", date: "2026-04-05", startTime: "08:00", endTime: "12:00", status: "Rejected" },
-]);
-
-const formData = ref({ empName: "", date: "", startTime: "", endTime: "", status: "Pending" });
+const formData = ref({
+  FullName: "",
+  Vacation_Days: 0,
+  Level: "NORMAL"
+})
 
 const openCreateModal = () => {
   isEditing.value = false;
   resetForm();
   isModalOpen.value = true;
-};
+}
 
 const openEditModal = (item) => {
   isEditing.value = true;
   currentEditId.value = item.id;
-  formData.value = { ...item };
+  formData.value = {
+    FullName: item.FullName,
+    Vacation_Days: item.Vacation_Days,
+    Level: item.Level
+  };
   isModalOpen.value = true;
-};
+}
 
 const closeModal = () => {
   isModalOpen.value = false;
   resetForm();
-};
+}
 
 const resetForm = () => {
-  formData.value = { empName: "", date: "", startTime: "", endTime: "", status: "Pending" };
-};
+  formData.value = { 
+    FullName: "", 
+    Vacation_Days: 0, 
+    Level: "NORMAL"
+  };
+}
 
 const saveRecord = () => {
-  if (!formData.value.empName || !formData.value.date) {
-    return alert("Please fill in Name and Date.");
-  }
+  const newEntry = {
+    id: isEditing.value ? currentEditId.value : Date.now(),
+    FullName: formData.value.FullName || "N/A",
+    Vacation_Days: formData.value.Vacation_Days,
+    Level: formData.value.Level
+  };
 
   if (isEditing.value) {
-    const idx = rawData.value.findIndex(i => i.id === currentEditId.value);
-    if (idx !== -1) rawData.value[idx] = { ...formData.value };
+    const index = records.value.findIndex(r => r.id === currentEditId.value);
+    if (index !== -1) records.value[index] = newEntry;
   } else {
-    rawData.value.unshift({ ...formData.value, id: Date.now() });
+    records.value.unshift(newEntry);
   }
   closeModal();
-};
-
-const verifyRecord = (id) => {
-  const item = rawData.value.find(i => i.id === id);
-  if (item) {
-    item.status = 'Approved';
-  }
-};
+}
 
 const deleteRecord = (id) => {
   if (confirm("Are you sure you want to delete this record?")) {
-    rawData.value = rawData.value.filter(i => i.id !== id);
+    records.value = records.value.filter(r => r.id !== id);
   }
-};
+}
+
+// Cấu hình phân trang và tìm kiếm
+const pageSizes = [10, 50, 100]
+const pageSize = ref(10)
+const currentPage = ref(1)
+const searchText = ref("")
+
+const getLevelClass = (level) => {
+  return {
+    'level-critical': level === 'CRITICAL',
+    'level-warning': level === 'WARNING',
+    'level-normal': level === 'NORMAL'
+  };
+}
 
 const filteredData = computed(() => {
-  return rawData.value.filter(item => {
-    const itemDate = new Date(item.date);
-    const start = startDate.value ? new Date(startDate.value) : null;
-    const end = endDate.value ? new Date(endDate.value) : null;
-    if (start && itemDate < start) return false;
-    if (end && itemDate > end) return false;
-    return true;
-  });
-});
+  return records.value.filter(r =>
+    Object.values(r).some(val => val?.toString().toLowerCase().includes(searchText.value.toLowerCase()))
+  )
+})
 
-const totalPages = computed(() => Math.ceil(filteredData.value.length / perPage.value) || 1);
+watch([searchText, pageSize], () => currentPage.value = 1)
+
+const totalPages = computed(() => Math.ceil(filteredData.value.length / pageSize.value) || 1)
+
 const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * perPage.value;
-  return filteredData.value.slice(start, start + perPage.value);
-});
-const startIdx = computed(() => filteredData.value.length === 0 ? 0 : (currentPage.value - 1) * perPage.value + 1);
-const endIdx = computed(() => Math.min(currentPage.value * perPage.value, filteredData.value.length));
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredData.value.slice(start, start + pageSize.value)
+})
 
-const resetDate = () => {
-  startDate.value = "";
-  endDate.value = "";
-  currentPage.value = 1;
-};
+const startIndex = computed(() => filteredData.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1)
+const endIndex = computed(() => Math.min(currentPage.value * pageSize.value, filteredData.value.length))
+
+const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.value++ }
+const prevPage = () => { if (currentPage.value > 1) currentPage.value-- }
 </script>
 
 <style scoped>
-.table-card { border: 1px solid #ddd; border-radius: 4px; margin: 20px; background: #fff; font-family: sans-serif; box-shadow: 0 1px 1px rgba(0,0,0,.05); }
-.card-header { padding: 12px 15px; border-bottom: 1px solid #eee; font-weight: bold; background: #f8f9fa; color: #333; }
-.create-link { color: #58c9f3; text-decoration: none; font-weight: normal; font-size: 13px; cursor: pointer; }
-.card-body { padding: 15px; }
-
-
-.table-controls-wrapper { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; font-size: 13px; color: #666; }
-.date-filter-box { display: flex; align-items: center; gap: 10px; }
-.filter-item { display: flex; align-items: center; gap: 5px; }
-.filter-item input { border: 1px solid #ddd; padding: 5px 8px; border-radius: 4px; outline: none; }
-.btn-reset { background: #f5f5f5; border: 1px solid #ddd; padding: 5px 12px; border-radius: 4px; cursor: pointer; }
-
-
-.data-table { width: 100%; border-collapse: collapse; }
-.data-table th { background-color: #f9f9f9; text-align: left; padding: 12px; border: 1px solid #eee; color: #444; font-size: 13px; }
-.data-table td { padding: 12px; border: 1px solid #eee; color: #666; font-size: 13px; }
-.font-bold { font-weight: bold; color: #333; }
-.no-data { text-align: center; padding: 30px !important; color: #999; }
-
-.status-tag { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
-.approved { background: #e6f4ea; color: #1e7e34; }
-.pending { background: #fff3cd; color: #856404; }
-.rejected { background: #f8d7da; color: #721c24; }
-.actions a { color: #58c9f3; text-decoration: none; cursor: pointer; }
-.text-danger { color: #ff5c5c !important; }
-
-.table-footer-wrapper { display: flex; justify-content: space-between; align-items: center; padding-top: 20px; font-size: 13px; color: #777; }
-.pagination-container { display: flex; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
-.nav-btn, .page-num-btn { border: none; background: white; padding: 6px 12px; cursor: pointer; color: #337ab7; border-right: 1px solid #ddd; }
-.page-num-btn.active { background-color: #337ab7; color: white; }
-
-.modal-overlay {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;
-}
-.modal-content {
-  background: #fff; width: 450px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-}
+.container { padding: 20px; font-family: sans-serif; color: #333; }
+h3 { background-color: #fcfcfc; padding: 15px; margin: 0; border: 1px solid #e0e0e0; }
+.link { color: #007bff; cursor: pointer; text-decoration: underline; margin-left: 10px; font-size: 0.8em; }
+.top-bar, .bottom-bar { display: flex; justify-content: space-between; padding: 15px; border: 1px solid #e0e0e0; background: #fff; }
+table { width: 100%; border-collapse: collapse; border: 1px solid #e0e0e0; }
+th, td { border: 1px solid #e0e0e0; padding: 10px; text-align: left; }
+th { background: #f8f9fa; }
+.action-buttons { display: flex; gap: 5px; }
+.btn-edit { background: #ffc107; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; color: #000; }
+.btn-delete { background: #dc3545; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; color: #fff; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal-content { background: #fff; width: 500px; border-radius: 8px; display: flex; flex-direction: column; max-height: 90vh; }
 .modal-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-.modal-title { margin: 0; font-size: 16px; color: #333; }
-.close-x { cursor: pointer; font-size: 24px; color: #aaa; }
-.modal-body { padding: 20px; }
-.form-group-modal { margin-bottom: 15px; display: flex; flex-direction: column; }
-.form-group-modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.form-group-modal label { font-size: 13px; font-weight: bold; color: #666; margin-bottom: 5px; }
-.form-group-modal input, .form-group-modal select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-.modal-footer { padding: 15px; border-top: 1px solid #eee; text-align: right; }
-.btn-modal-save { background: #58c9f3; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-.btn-modal-back { background: #f5f5f5; border: 1px solid #ddd; padding: 8px 20px; border-radius: 4px; margin-right: 10px; cursor: pointer; }
+.modal-body { padding: 20px; overflow-y: auto; }
+.form-grid { display: grid; gap: 15px; }
+.form-group { display: flex; flex-direction: column; }
+.form-group label { font-weight: bold; margin-bottom: 5px; font-size: 13px; }
+.form-group input, .form-group select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+.modal-footer { padding: 15px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; }
+.btn-create-submit { background: #28a745; color: #fff; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+.pagination button { margin: 0 5px; cursor: pointer; }
+
+/* Các định dạng cho mức độ (Level) */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  font-size: 13px;
+  color: #333; /* Chữ luôn hiển thị màu đen */
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.level-critical .dot {
+  background-color: #dc3545; /* Đỏ */
+}
+.level-warning .dot {
+  background-color: #ffc107; /* Vàng */
+}
+.level-normal .dot {
+  background-color: #28a745; /* Xanh lá */
+}
 </style>

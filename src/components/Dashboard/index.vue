@@ -228,7 +228,7 @@ const masterData = [
   { name: 'Bach Thi II', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Part-time', salary: 42000, status: 'Active', daysTaken: 4, department: 'HR', hireDate: '2024-09-02', birthMonth: 7 },
   { name: 'Kieu Van KK', ethnicity: 'Kinh', gender: 'Male', shareholder: 'No', jobType: 'Full-time', salary: 51000, status: 'Active', daysTaken: 6, department: 'IT', hireDate: '2023-04-20', birthMonth: 10 },
   { name: 'Nhan Thi LL', ethnicity: 'Khác', gender: 'Female', shareholder: 'Yes', jobType: 'Full-time', salary: 62000, status: 'Active', daysTaken: 10, department: 'Finance', hireDate: '2022-12-12', birthMonth: 12 },
-  { name: 'Luu Van MM', ethnicity: 'Kinh', gender: 'Male', shareholder: 'No', jobType: 'Part-time', salary: 36000, status: 'Inactive', daysTaken: 3, department: 'HR', hireDate: '2024-12-01', birthMonth: 6 },
+  { name: 'Luu Van MM', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Part-time', salary: 36000, status: 'Inactive', daysTaken: 3, department: 'HR', hireDate: '2024-12-01', birthMonth: 6 },
   { name: 'Phung Thi NN', ethnicity: 'Kinh', gender: 'Female', shareholder: 'Yes', jobType: 'Full-time', salary: 68000, status: 'Active', daysTaken: 12, department: 'IT', hireDate: '2020-09-09', birthMonth: 9 },
   { name: 'Ta Van OO', ethnicity: 'Khác', gender: 'Male', shareholder: 'No', jobType: 'Full-time', salary: 49000, status: 'Active', daysTaken: 7, department: 'Finance', hireDate: '2023-05-13', birthMonth: 5 },
   { name: 'Lao Thi PP', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Part-time', salary: 44000, status: 'Active', daysTaken: 5, department: 'HR', hireDate: '2024-07-17', birthMonth: 11 },
@@ -243,10 +243,6 @@ const masterData = [
   { name: 'Mạch Văn YY', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Part-time', salary: 35000, status: 'Inactive', daysTaken: 2, department: 'HR', hireDate: '2025-03-08', birthMonth: 5 },
   { name: 'Nghiêm Thị ZZ', ethnicity: 'Kinh', gender: 'Female', shareholder: 'Yes', jobType: 'Full-time', salary: 67000, status: 'Active', daysTaken: 12, department: 'IT', hireDate: '2021-01-15', birthMonth: 11 }
 ]
-
-const getMonthFromDate = (dateString) => {
-  return new Date(dateString).getMonth() + 1
-}
 
 const renderDashboard = (dataToUse) => {
   const totalEmployees = dataToUse.length
@@ -348,7 +344,6 @@ const renderDashboard = (dataToUse) => {
     }
   })
 
-  // ---- Cảnh báo gộp nhóm thông minh ----
   const alertList = document.getElementById('alertList')
   alertList.innerHTML = ''
 
@@ -383,16 +378,20 @@ const renderDashboard = (dataToUse) => {
     })
   }
 
+  // Cập nhật: Thêm nút xem cho phần nghỉ phép vượt quá quy định
   if (vacations.length > 0) {
     listElements.push({
-      text: `Nghỉ phép vượt quá quy định (${vacations.length} người): ${vacations.join(', ')}`
+      text: `Nghỉ phép vượt quá quy định (${vacations.length} người): ${vacations.join(', ')}`,
+      hasBtn: true,
+      routePath: '/vadationlist' // Nút xem trỏ tới route yêu cầu
     })
   }
 
   if (birthdays.length > 0) {
     listElements.push({
       text: `Sinh nhật trong tháng (${birthdays.length} người): ${birthdays.join(', ')}`,
-      hasBtn: true
+      hasBtn: true,
+      routePath: '/Brithday-list'
     })
   }
 
@@ -413,7 +412,7 @@ const renderDashboard = (dataToUse) => {
         viewBtn.className = 'ml-4 bg-emerald-600 text-white text-[10px] font-bold py-1 px-3 rounded uppercase hover:bg-emerald-700 transition';
         viewBtn.onclick = (e) => {
           e.preventDefault();
-          router.push('/Brithday-list');
+          router.push(itemObj.routePath);
         };
         li.appendChild(viewBtn);
       }
