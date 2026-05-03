@@ -45,6 +45,7 @@
               <option value="">[Tất cả phòng ban]</option>
               <option>IT</option>
               <option>HR</option>
+              <option>Finance</option>
             </select>
           </div>
           <div>
@@ -68,7 +69,7 @@
           </div>
           <div>
             <h4 class="font-bold text-slate-800 mb-2">Cảnh báo theo điều kiện:</h4>
-            <ul id="alertList" class="space-y-2 text-emerald-600 font-medium">
+            <ul id="alertList" class="space-y-2 text-emerald-600 font-medium max-h-[250px] overflow-y-auto pr-2">
             </ul>
           </div>
         </div>
@@ -133,17 +134,28 @@
       </div>
 
       <div class="card overflow-hidden mb-8">
-        <div class="p-5 border-b flex justify-between items-center bg-white">
+        <div class="p-5 border-b flex justify-between items-center bg-white flex-wrap gap-4">
           <h3 class="text-sm font-bold text-slate-700 uppercase">Bảng chi tiết nhân viên</h3>
-          <div class="relative">
-            <i class="fas fa-search absolute left-3 top-3 text-gray-400 text-xs"></i>
-            <input
-              type="text"
-              id="searchInput"
-              @input="searchTable"
-              placeholder="Search employee..."
-              class="pl-8 pr-4 py-2 border rounded-full text-xs outline-none focus:ring-2 ring-blue-100 w-72"
-            />
+          
+          <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-600">Hiển thị:</span>
+              <select id="rowsPerPage" @change="applyFilter" class="border rounded px-2 py-1 text-xs outline-none focus:ring-1 ring-blue-200">
+                <option value="10">10</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+            <div class="relative">
+              <i class="fas fa-search absolute left-3 top-3 text-gray-400 text-xs"></i>
+              <input
+                type="text"
+                id="searchInput"
+                @input="searchTable"
+                placeholder="Search employee..."
+                class="pl-8 pr-4 py-2 border rounded-full text-xs outline-none focus:ring-2 ring-blue-100 w-64"
+              />
+            </div>
           </div>
         </div>
         <div class="overflow-x-auto">
@@ -182,7 +194,54 @@ let salaryComparisonChartInstance = null
 const masterData = [
   { name: 'Nguyen Van A', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 62000, status: 'Active', daysTaken: 12, department: 'IT', hireDate: '2025-05-05', birthMonth: 5 },
   { name: 'Nguyen Thi B', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Part-time', salary: 40000, status: 'Active', daysTaken: 6, department: 'HR', hireDate: '2024-04-15', birthMonth: 12 },
-  { name: 'Tran Van C', ethnicity: 'Khác', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 68000, status: 'Inactive', daysTaken: 18, department: 'IT', hireDate: '2022-05-02', birthMonth: 9 }
+  { name: 'Tran Van C', ethnicity: 'Khác', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 68000, status: 'Inactive', daysTaken: 18, department: 'IT', hireDate: '2022-05-02', birthMonth: 9 },
+  { name: 'Le Thi D', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 55000, status: 'Active', daysTaken: 4, department: 'IT', hireDate: '2023-08-10', birthMonth: 2 },
+  { name: 'Pham Van E', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Yes', jobType: 'Part-time', salary: 32000, status: 'Active', daysTaken: 2, department: 'Finance', hireDate: '2025-01-20', birthMonth: 4 },
+  { name: 'Hoang Thi F', ethnicity: 'Khác', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 48000, status: 'Active', daysTaken: 8, department: 'HR', hireDate: '2023-11-12', birthMonth: 6 },
+  { name: 'Vo Van G', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 72000, status: 'Active', daysTaken: 11, department: 'IT', hireDate: '2021-03-05', birthMonth: 3 },
+  { name: 'Dang Thi H', ethnicity: 'Kinh', gender: 'Female', shareholder: 'Yes', jobType: 'Part-time', salary: 45000, status: 'Active', daysTaken: 5, department: 'Finance', hireDate: '2024-02-18', birthMonth: 8 },
+  { name: 'Bui Van I', ethnicity: 'Khác', gender: 'Male', shareholder: 'No', jobType: 'Full-time', salary: 52000, status: 'Inactive', daysTaken: 15, department: 'HR', hireDate: '2020-07-25', birthMonth: 1 },
+  { name: 'Vu Thi K', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 58000, status: 'Active', daysTaken: 7, department: 'IT', hireDate: '2022-09-30', birthMonth: 7 },
+  { name: 'Ngo Van L', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 60000, status: 'Active', daysTaken: 10, department: 'Finance', hireDate: '2022-10-01', birthMonth: 11 },
+  { name: 'Do Thi M', ethnicity: 'Khác', gender: 'Female', shareholder: 'No', jobType: 'Part-time', salary: 38000, status: 'Active', daysTaken: 3, department: 'HR', hireDate: '2024-05-14', birthMonth: 10 },
+  { name: 'Duong Van N', ethnicity: 'Kinh', gender: 'Male', shareholder: 'No', jobType: 'Full-time', salary: 49000, status: 'Active', daysTaken: 9, department: 'IT', hireDate: '2023-01-11', birthMonth: 4 },
+  { name: 'Dinh Thi O', ethnicity: 'Kinh', gender: 'Female', shareholder: 'Yes', jobType: 'Full-time', salary: 65000, status: 'Active', daysTaken: 6, department: 'IT', hireDate: '2021-06-22', birthMonth: 9 },
+  { name: 'Truong Van P', ethnicity: 'Khác', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 70000, status: 'Active', daysTaken: 12, department: 'Finance', hireDate: '2020-12-05', birthMonth: 3 },
+  { name: 'Ho Thi Q', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Part-time', salary: 41000, status: 'Active', daysTaken: 4, department: 'HR', hireDate: '2024-08-08', birthMonth: 5 },
+  { name: 'Cao Van R', ethnicity: 'Kinh', gender: 'Male', shareholder: 'No', jobType: 'Full-time', salary: 53000, status: 'Active', daysTaken: 7, department: 'IT', hireDate: '2022-04-19', birthMonth: 12 },
+  { name: 'Phan Thi S', ethnicity: 'Khác', gender: 'Female', shareholder: 'Yes', jobType: 'Full-time', salary: 64000, status: 'Active', daysTaken: 8, department: 'Finance', hireDate: '2022-02-27', birthMonth: 6 },
+  { name: 'To Van T', ethnicity: 'Kinh', gender: 'Male', shareholder: 'No', jobType: 'Part-time', salary: 35000, status: 'Inactive', daysTaken: 11, department: 'HR', hireDate: '2021-09-17', birthMonth: 8 },
+  { name: 'Mai Thi U', ethnicity: 'Kinh', gender: 'Female', shareholder: 'Yes', jobType: 'Full-time', salary: 67000, status: 'Active', daysTaken: 9, department: 'IT', hireDate: '2021-04-14', birthMonth: 1 },
+  { name: 'Thai Van V', ethnicity: 'Khác', gender: 'Male', shareholder: 'No', jobType: 'Full-time', salary: 50000, status: 'Active', daysTaken: 6, department: 'Finance', hireDate: '2023-07-21', birthMonth: 7 },
+  { name: 'Ta Thi W', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Part-time', salary: 43000, status: 'Active', daysTaken: 5, department: 'HR', hireDate: '2024-06-25', birthMonth: 10 },
+  { name: 'Nguyen Van X', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 61000, status: 'Active', daysTaken: 10, department: 'IT', hireDate: '2022-05-18', birthMonth: 11 },
+  { name: 'Nguyen Thi Y', ethnicity: 'Khác', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 56000, status: 'Active', daysTaken: 7, department: 'Finance', hireDate: '2023-03-03', birthMonth: 2 },
+  { name: 'Tran Van Z', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Yes', jobType: 'Part-time', salary: 39000, status: 'Active', daysTaken: 4, department: 'HR', hireDate: '2024-10-10', birthMonth: 9 },
+  { name: 'Ly Thi AA', ethnicity: 'Kinh', gender: 'Female', shareholder: 'Yes', jobType: 'Full-time', salary: 69000, status: 'Active', daysTaken: 13, department: 'IT', hireDate: '2020-08-18', birthMonth: 4 },
+  { name: 'Ha Van BB', ethnicity: 'Khác', gender: 'Male', shareholder: 'No', jobType: 'Full-time', salary: 47000, status: 'Active', daysTaken: 6, department: 'Finance', hireDate: '2023-10-09', birthMonth: 12 },
+  { name: 'Trieu Thi CC', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Part-time', salary: 34000, status: 'Active', daysTaken: 2, department: 'HR', hireDate: '2025-02-14', birthMonth: 6 },
+  { name: 'Bui Van DD', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 73000, status: 'Inactive', daysTaken: 14, department: 'IT', hireDate: '2019-11-21', birthMonth: 5 },
+  { name: 'Chu Thi EE', ethnicity: 'Khác', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 53000, status: 'Active', daysTaken: 8, department: 'Finance', hireDate: '2022-06-16', birthMonth: 3 },
+  { name: 'Vuong Van FF', ethnicity: 'Kinh', gender: 'Male', shareholder: 'No', jobType: 'Part-time', salary: 37000, status: 'Active', daysTaken: 5, department: 'HR', hireDate: '2024-11-20', birthMonth: 1 },
+  { name: 'Quach Thi GG', ethnicity: 'Kinh', gender: 'Female', shareholder: 'Yes', jobType: 'Full-time', salary: 66000, status: 'Active', daysTaken: 9, department: 'IT', hireDate: '2021-07-07', birthMonth: 8 },
+  { name: 'Nghiem Van HH', ethnicity: 'Khác', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 71000, status: 'Active', daysTaken: 11, department: 'Finance', hireDate: '2020-05-05', birthMonth: 2 },
+  { name: 'Bach Thi II', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Part-time', salary: 42000, status: 'Active', daysTaken: 4, department: 'HR', hireDate: '2024-09-02', birthMonth: 7 },
+  { name: 'Kieu Van KK', ethnicity: 'Kinh', gender: 'Male', shareholder: 'No', jobType: 'Full-time', salary: 51000, status: 'Active', daysTaken: 6, department: 'IT', hireDate: '2023-04-20', birthMonth: 10 },
+  { name: 'Nhan Thi LL', ethnicity: 'Khác', gender: 'Female', shareholder: 'Yes', jobType: 'Full-time', salary: 62000, status: 'Active', daysTaken: 10, department: 'Finance', hireDate: '2022-12-12', birthMonth: 12 },
+  { name: 'Luu Van MM', ethnicity: 'Kinh', gender: 'Male', shareholder: 'No', jobType: 'Part-time', salary: 36000, status: 'Inactive', daysTaken: 3, department: 'HR', hireDate: '2024-12-01', birthMonth: 6 },
+  { name: 'Phung Thi NN', ethnicity: 'Kinh', gender: 'Female', shareholder: 'Yes', jobType: 'Full-time', salary: 68000, status: 'Active', daysTaken: 12, department: 'IT', hireDate: '2020-09-09', birthMonth: 9 },
+  { name: 'Ta Van OO', ethnicity: 'Khác', gender: 'Male', shareholder: 'No', jobType: 'Full-time', salary: 49000, status: 'Active', daysTaken: 7, department: 'Finance', hireDate: '2023-05-13', birthMonth: 5 },
+  { name: 'Lao Thi PP', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Part-time', salary: 44000, status: 'Active', daysTaken: 5, department: 'HR', hireDate: '2024-07-17', birthMonth: 11 },
+  { name: 'Tieu Van QQ', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 59000, status: 'Active', daysTaken: 8, department: 'IT', hireDate: '2022-08-08', birthMonth: 4 },
+  { name: 'Dao Thi RR', ethnicity: 'Khác', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 54000, status: 'Active', daysTaken: 6, department: 'Finance', hireDate: '2022-11-22', birthMonth: 3 },
+  { name: 'Chau Van SS', ethnicity: 'Kinh', gender: 'Male', shareholder: 'No', jobType: 'Part-time', salary: 38000, status: 'Active', daysTaken: 4, department: 'HR', hireDate: '2024-03-03', birthMonth: 8 },
+  { name: 'Bao Thi TT', ethnicity: 'Kinh', gender: 'Female', shareholder: 'Yes', jobType: 'Full-time', salary: 63000, status: 'Active', daysTaken: 9, department: 'IT', hireDate: '2022-01-28', birthMonth: 1 },
+  { name: 'Chung Van UU', ethnicity: 'Khác', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 74000, status: 'Active', daysTaken: 15, department: 'Finance', hireDate: '2019-10-15', birthMonth: 2 },
+  { name: 'Khang Thi VV', ethnicity: 'Kinh', gender: 'Female', shareholder: 'No', jobType: 'Part-time', salary: 41000, status: 'Active', daysTaken: 3, department: 'HR', hireDate: '2024-01-30', birthMonth: 12 },
+  { name: 'Thiều Văn WW', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Yes', jobType: 'Full-time', salary: 60000, status: 'Active', daysTaken: 10, department: 'IT', hireDate: '2022-10-25', birthMonth: 7 },
+  { name: 'Trác Thị XX', ethnicity: 'Khác', gender: 'Female', shareholder: 'No', jobType: 'Full-time', salary: 55000, status: 'Active', daysTaken: 7, department: 'Finance', hireDate: '2023-02-15', birthMonth: 6 },
+  { name: 'Mạch Văn YY', ethnicity: 'Kinh', gender: 'Male', shareholder: 'Part-time', salary: 35000, status: 'Inactive', daysTaken: 2, department: 'HR', hireDate: '2025-03-08', birthMonth: 5 },
+  { name: 'Nghiêm Thị ZZ', ethnicity: 'Kinh', gender: 'Female', shareholder: 'Yes', jobType: 'Full-time', salary: 67000, status: 'Active', daysTaken: 12, department: 'IT', hireDate: '2021-01-15', birthMonth: 11 }
 ]
 
 const getMonthFromDate = (dateString) => {
@@ -289,10 +348,13 @@ const renderDashboard = (dataToUse) => {
     }
   })
 
+  // ---- Cảnh báo gộp nhóm thông minh ----
   const alertList = document.getElementById('alertList')
   alertList.innerHTML = ''
 
-  let alerts = []
+  let anniversaries = []
+  let vacations = []
+  let birthdays = []
   const currentMonth = 5;
 
   dataToUse.forEach(item => {
@@ -301,39 +363,51 @@ const renderDashboard = (dataToUse) => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
     if (diffDays >= 0 && diffDays <= 7) {
-      alerts.push({
-        type: 'default',
-        text: `Cảnh báo: Nhân viên ${item.name} sắp đến ngày kỷ niệm tuyển dụng (còn ${diffDays} ngày).`
-      });
+      anniversaries.push(item.name)
     }
 
     if (item.daysTaken > 10) {
-      alerts.push({
-        type: 'default',
-        text: `Cảnh báo: Nhân viên ${item.name} đã tích lũy ${item.daysTaken} ngày nghỉ phép, vượt quá mức quy định.`
-      });
+      vacations.push(item.name)
     }
 
     if (item.birthMonth === currentMonth) {
-      alerts.push({
-        type: 'birthday',
-        text: `Cảnh báo: Nhân viên ${item.name} có sinh nhật trong tháng hiện tại.`
-      });
+      birthdays.push(item.name)
     }
   })
 
-  if (alerts.length === 0) {
+  let listElements = []
+
+  if (anniversaries.length > 0) {
+    listElements.push({
+      text: `Kỷ niệm tuyển dụng (${anniversaries.length} người): ${anniversaries.join(', ')}`
+    })
+  }
+
+  if (vacations.length > 0) {
+    listElements.push({
+      text: `Nghỉ phép vượt quá quy định (${vacations.length} người): ${vacations.join(', ')}`
+    })
+  }
+
+  if (birthdays.length > 0) {
+    listElements.push({
+      text: `Sinh nhật trong tháng (${birthdays.length} người): ${birthdays.join(', ')}`,
+      hasBtn: true
+    })
+  }
+
+  if (listElements.length === 0) {
     alertList.innerHTML = `<li class="text-gray-400">Không có cảnh báo nào cho điều kiện này.</li>`
   } else {
-    alerts.forEach(alertObj => {
+    listElements.forEach(itemObj => {
       let li = document.createElement('li');
       li.className = 'flex justify-between items-center bg-emerald-50 px-3 py-2 rounded-md border border-emerald-100';
 
       let textSpan = document.createElement('span');
-      textSpan.textContent = alertObj.text;
+      textSpan.textContent = itemObj.text;
       li.appendChild(textSpan);
 
-      if (alertObj.type === 'birthday') {
+      if (itemObj.hasBtn) {
         let viewBtn = document.createElement('button');
         viewBtn.textContent = 'Xem';
         viewBtn.className = 'ml-4 bg-emerald-600 text-white text-[10px] font-bold py-1 px-3 rounded uppercase hover:bg-emerald-700 transition';
@@ -343,7 +417,6 @@ const renderDashboard = (dataToUse) => {
         };
         li.appendChild(viewBtn);
       }
-
       alertList.appendChild(li);
     })
   }
@@ -356,7 +429,12 @@ const renderDashboard = (dataToUse) => {
     return
   }
 
-  dataToUse.forEach(item => {
+  const rowsPerPageSelect = document.getElementById('rowsPerPage');
+  let displayLimit = rowsPerPageSelect ? rowsPerPageSelect.value : '10';
+
+  let itemsToDisplay = dataToUse.slice(0, parseInt(displayLimit, 10));
+
+  itemsToDisplay.forEach(item => {
     const color = item.shareholder === 'Yes' ? 'text-blue-600' : 'text-slate-600'
     const statusColor = item.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
     tableBody.innerHTML += `
