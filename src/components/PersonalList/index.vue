@@ -10,7 +10,7 @@
             {{ size }}
           </option>
         </select>
-        entries
+        entriesz
       </div>
 
       <div>
